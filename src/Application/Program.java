@@ -2,34 +2,50 @@ package Application;
 
 import db.DB;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 public class Program {
     public static void main(String[] args) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+
         Connection conn = null;
-
-        Statement st =  null;
-
-        ResultSet rs = null;
-
-        try{
+        PreparedStatement st = null;
+        try {
             conn = DB.getConnection();
-            st = conn.createStatement();
+            st = conn.prepareStatement(
+                    "INSERT INTO seller "
+                            + "(Name, Email, BirthDate, BaseSalary, DepartmentId)"
+                            + "VALUES"
+                            + "(?, ?, ?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS);
 
-            rs =st.executeQuery("select * from department");
+            st.setString(1, "Carl Purple");
+            st.setString(2, "carl@gmail.com");
+            st.setDate(3, new java.sql.Date(sdf.parse("22/04/1985").getTime()));
+            st.setDouble(4, 3000.0);
+            st.setInt(5, 4);
 
-            while(rs.next()){
-                System.out.println(rs.getInt("Id") + ", " + rs.getString("Name"));
-            }
-        }catch (SQLException e){
+            int rowsAffected = st.executeUpdate();
+
+                if (rowsAffected > 0){
+                    ResultSet rs = st.getGeneratedKeys();
+                    while(rs.next()){
+                        int id = rs.getInt(1);
+                        System.out.println("Pronto! Id igual a " + id);
+                    }
+                }else {
+                    System.out.println("No rows affected");
+                }
+        } catch (SQLException e) {
             e.printStackTrace();
-        }finally {
-            DB.closeResultSet(rs);
-            DB.closeStatement(st);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        } finally {
+            DB.closeConnection();
             DB.closeConnection();
         }
     }
+
 }
